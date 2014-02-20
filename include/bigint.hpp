@@ -105,6 +105,11 @@ private:
 	size_t size;
 
 	std::vector<uint32_t> words; /*< The number stored as 32-bit words. */
+
+	/**
+	 * \brief Trim the zeroes from the big end of the number.
+	 */
+	void trim();
 };
 
 /**

@@ -149,9 +149,8 @@ BigInt& BigInt::operator-=(const BigInt& that)
 			*this = that - *this;
 	else
 	{
-		/* We are guaranteed that *this >= that */
-
 		bool shouldBorrow = false;
+
 		for (size_t i = 0; i < size; i++)
 		{
 			if (shouldBorrow)
@@ -170,7 +169,7 @@ BigInt& BigInt::operator-=(const BigInt& that)
 					sum -= that.words[i];
 
 					words[i] = sum;
-					
+
 					shouldBorrow = true;
 				}
 			}
@@ -184,6 +183,8 @@ BigInt& BigInt::operator-=(const BigInt& that)
 		}
 
 	}
+
+	trim();
 
 	return *this;
 }
@@ -216,4 +217,11 @@ bool operator>=(const BigInt& left, const BigInt& right)
 bool operator<=(const BigInt& left, const BigInt& right)
 {
 	return BigInt::compare(left, right) != BigInt::Compare::GreaterThan;
+}
+
+void BigInt::trim()
+{
+	/* We always ensure that the size is at least one (even if words[0] == 0). */
+	while (size > 1 && words[size - 1] == 0)
+		size--;
 }
