@@ -14,24 +14,6 @@ class BigInt
 {
 public:
 	/**
-	 * \brief Initialize a BigInt.
-	 * \param that The value to initialize to.
-	 */
-	BigInt(int value);
-
-	/**
-	 * \brief Copy-construct a BigInt from that.
-	 * \param that The value to copy.
-	 */
-	BigInt(const BigInt& that);
-
-	/**
-	 * \brief Move-construct a BigInt. that is left in an invalid state.
-	 * \param that The value to move.
-	 */
-	BigInt(BigInt&& that);
-
-	/**
 	 * \brief Describes the relationship between two integers.
 	 */
 	enum class Compare
@@ -53,6 +35,65 @@ public:
 	 *          left and right.
 	 */
 	static Compare compare(const BigInt& left, const BigInt& right);
+
+	/**
+	 * \brief Initialize a BigInt.
+	 * \param that The value to initialize to.
+	 */
+	BigInt(int value);
+
+	/**
+	 * \brief Copy-construct a BigInt from that.
+	 * \param that The value to copy.
+	 */
+	BigInt(const BigInt& that);
+
+	/**
+	 * \brief Move-construct a BigInt.
+	 * \param that The value to move.
+	 */
+	BigInt(BigInt&& that);
+
+	/**
+	 * \brief Move-assign a BigInt.
+	 * \param that The value to move.
+	 * \return The object assigned to.
+	 */
+	BigInt& operator=(BigInt&& that);
+
+	/**
+	 * \brief Negate a BigInt.
+	 * \return The value negated.
+	 */
+	BigInt operator-() const;
+
+	/**
+	 * \brief Add two BigInts.
+	 * \param that The value to add to this.
+	 * \return The sum.
+	 */
+	BigInt operator+(const BigInt& that) const;
+
+	/**
+	 * \brief Subtract two BigInts.
+	 * \param that The value to subtract from this.
+	 * \param The difference.
+	 */
+	BigInt operator-(const BigInt& that) const;
+
+	/**
+	 * \brief Add that to this.
+	 * \param that The value to add to this.
+	 * \return This.
+	 */
+	BigInt& operator+=(const BigInt& that);
+
+	/**
+	 * \brief Subtract that from this.
+	 * \param that The value to subtract from this.
+	 * \return This.
+	 */
+	BigInt& operator-=(const BigInt& that);
 
 private:
 	bool positive; /*< True if the number is positive. */
