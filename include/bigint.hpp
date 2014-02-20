@@ -32,49 +32,6 @@ public:
 	BigInt(BigInt&& that);
 
 	/**
-	 * \brief Compare for equality.
-	 * \param that The value to compare against.
-	 * \return Whether the two values are equal.
-	 */
-	bool operator==(const BigInt& that) const;
-
-	/**
-	 * \brief Compare for inequailty.
-	 * \param that The value to compare against.
-	 * \return Whether the two values aren't equal.
-	 */
-	bool operator!=(const BigInt& that) const;
-
-	/**
-	 * \brief Check if this value is less than another.
-	 * \param that The value to compare against.
-	 * \return Whether this value is less than the other.
-	 */
-	bool operator<(const BigInt& that) const;
-
-	/**
-	 * \brief Check if this value is greater than another.
-	 * \param that The value to compare against.
-	 * \return Whether this value is greater than the other.
-	 */
-	bool operator>(const BigInt& that) const;
-	
-	/**
-	 * \brief Check if this value is less than another or equal to it.
-	 * \param that The value to compare against.
-	 * \return Whether this value is less than the other or equal to it.
-	 */
-	bool operator<=(const BigInt& that) const;
-
-	/**
-	 * \brief Check if this value is greater than another or equal to it.
-	 * \param that The value to compare against.
-	 * \return Whether this value is greater than the other or equal to it.
-	 */
-	bool operator>=(const BigInt& that) const;
-	
-private:
-	/**
 	 * \brief Describes the relationship between two integers.
 	 */
 	enum class Compare
@@ -97,6 +54,7 @@ private:
 	 */
 	static Compare compare(const BigInt& left, const BigInt& right);
 
+private:
 	bool positive; /*< True if the number is positive. */
 	
 	/**
@@ -107,6 +65,48 @@ private:
 
 	std::vector<uint32_t> words; /*< The number stored as 32-bit words. */
 };
+
+/**
+ * \brief Compare for equality.
+ * \param that The value to compare against.
+ * \return Whether the two values are equal.
+ */
+bool operator==(const BigInt& left, const BigInt& right);
+
+/**
+ * \brief Compare for inequailty.
+ * \param that The value to compare against.
+ * \return Whether the two values aren't equal.
+ */
+bool operator!=(const BigInt& left, const BigInt& right);
+
+/**
+ * \brief Check if this value is less than another.
+ * \param that The value to compare against.
+ * \return Whether this value is less than the other.
+ */
+bool operator<(const BigInt& left, const BigInt& right);
+
+/**
+ * \brief Check if this value is greater than another.
+ * \param that The value to compare against.
+ * \return Whether this value is greater than the other.
+ */
+bool operator>(const BigInt& left, const BigInt& right);
+
+/**
+ * \brief Check if this value is less than another or equal to it.
+ * \param that The value to compare against.
+ * \return Whether this value is less than the other or equal to it.
+ */
+bool operator<=(const BigInt& left, const BigInt& right);
+
+/**
+ * \brief Check if this value is greater than another or equal to it.
+ * \param that The value to compare against.
+ * \return Whether this value is greater than the other or equal to it.
+ */
+bool operator>=(const BigInt& left, const BigInt& right);
 
 
 #endif
