@@ -3,7 +3,7 @@
 #include <vector>
 #include <functional>
 #include <stdexcept>
-#include "BigInt.hpp"
+#include "bigint.hpp"
 
 using namespace std;
 
@@ -195,6 +195,43 @@ bool test_subtraction()
 	return success;
 }
 
+bool test_rshift()
+{
+	bool success = true;
+
+	struct Test
+	{
+		string value;
+		size_t shift;
+		string result;
+	};
+
+	vector<Test> tests
+	{
+		{"18446744073709551615", 31, "8589934591"},
+		{"18446744073709551615", 32, "4294967295"},
+		{"18446744073709551615", 33, "2147483647"}
+	};
+
+	cout << "test_rshift:" << endl;
+	for (auto test : tests)
+	{
+		BigInt value(test.value), result(test.result);
+		BigInt shifted(value >> test.shift);
+
+		cout << test.value << " >> " << test.shift;
+		if (shifted == result)
+			cout << " == " << test.result << endl;
+		else
+		{
+			cout << " != " << test.result << "( got " << (string)shifted << " instead)" << endl;
+			success = false;
+		}
+	}
+
+	return success;
+}
+
 int main()
 {
 	size_t successes = 0;
@@ -204,7 +241,8 @@ int main()
 		test_roundtrip,
 		test_sign,
 		test_addition,
-		test_subtraction	
+		test_subtraction,
+		test_rshift
 	};
 
 	for (auto test : tests)

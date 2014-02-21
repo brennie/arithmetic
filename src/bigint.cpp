@@ -70,7 +70,7 @@ BigInt::BigInt(const std::string& str) : positive(true)
 
 			binaryDigits.push_back(remainder == 1);
 
-			while (digits.back() == 0)
+			while (!digits.empty() && digits.back() == 0)
 				digits.pop_back();
 		}
 
@@ -298,6 +298,20 @@ uint32_t BigInt::operator%(const uint32_t that) const
 	return static_cast<uint32_t>(remainder);
 }
 
+BigInt BigInt::operator<<(const uint32_t that) const
+{
+	BigInt copy(*this);
+	copy <<= that;
+	return copy;
+}
+
+BigInt BigInt::operator>>(const uint32_t that) const
+{
+	BigInt copy(*this);
+	copy >>= that;
+	return copy;
+}
+
 BigInt& BigInt::operator+=(const BigInt& that)
 {
 	if (positive && !that.positive)
@@ -523,6 +537,56 @@ BigInt& BigInt::operator%=(const BigInt& that)
 	return *this;
 }
 
+BigInt& BigInt::operator<<=(const uint32_t that)
+{
+	size_t words = that / 32;
+	size_t bits = that % 32;
+
+	if (bits > 0)
+		words++;
+
+
+
+	if (bits > 0)
+		*this >>= 32 - bits;
+
+	return *this;
+}
+
+BigInt& BigInt::operator>>=(const uint32_t that)
+{
+	size_t wordShifts = that / 32;
+	size_t bitShifts = that % 32;
+
+	if (wordShifts)
+	{
+		const size_t oldSize = words.size();
+
+		for(size_t i = 0; i < oldSize - wordShifts; i--)
+			words[i] = words[i + wordShifts];
+
+		while (words.size() != oldSize - wordShifts)
+			words.pop_back();
+	}
+
+	if (bitShifts)
+	{
+		const uint32_t mask = (1 << bitShifts) - 1;
+		uint32_t lastHigh = 0, nextHigh = 0;
+
+		for (auto word = words.rbegin(); word != words.rend(); ++word)
+		{
+			nextHigh = *word & mask;
+			*word >>= bitShifts;
+			*word |= lastHigh << (32 - bitShifts);
+
+			lastHigh = nextHigh;
+		}
+	}
+
+	return *this;
+}
+
 BigInt::operator std::string() const
 {
 	/* Largest power of 10 under 2^32 */
@@ -591,6 +655,21 @@ bool BigInt::isNegative() const
 {
 	return !positive;
 }
+
+size_t BigInt::size() const
+{
+	/* The size of the number is the number of bits in each word.
+	 * We know that all but the last word is guaranteed to be full. The last
+	 * word (i.e. the msb) has a variable number of bits, so we count those and
+	 * add it to the total.
+	 */
+	size_t size = 32 * (words.size() - 1);
+	for (uint32_t msb = words.back(); msb != 0; msb >>= 1)
+		size++;
+
+	return size;
+}
+
 
 void BigInt::trim()
 {
