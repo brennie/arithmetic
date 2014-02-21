@@ -20,6 +20,74 @@ BigInt::BigInt(uint32_t that) : positive(true), words(1)
 	words[0] = that;
 }
 
+BigInt::BigInt(const std::string& str) : positive(true)
+{
+	if (str.length() == 0)
+		words.push_back(0);
+
+	else if (str.length() == 1 && str[0] == '-')
+		throw std::invalid_argument("invalid number string");
+
+	else
+	{
+		std::vector<uint32_t> digits;
+		std::vector<bool> binaryDigits;
+
+		{
+			auto endIt = str.crend();
+			
+			if (str[0] == '-')
+			{
+				positive = false;
+				--endIt;
+			}
+
+			for (auto it = str.crbegin(); it != endIt; ++it)
+			{
+				if (! std::isdigit(*it))
+					throw std::invalid_argument("invalid number string");
+
+				digits.push_back(*it - '0');
+			}
+		}
+
+		/* We can treat digits as a base-10 big integer in little endian order.
+		 * If we divide the number through by 2 until it is zero, then the
+		 * remainders of those divisions will be the binary digits of the
+		 * base-2 integer in little endian order.
+		 */
+		while (!digits.empty())
+		{
+			uint32_t remainder = 0;
+			
+			for (auto digit = digits.rbegin(); digit != digits.rend(); ++digit)
+			{
+				*digit += remainder * 10;
+				remainder = *digit % 2;
+				*digit /= 2;
+			}
+
+			binaryDigits.push_back(remainder == 1);
+
+			while (digits[digits.size() - 1] == 0)
+				digits.pop_back();
+		}
+
+		/* We now construct individual base-32 numbers out of our binary digits. */
+		for (size_t i = 0; i < binaryDigits.size(); i += 32)
+		{
+			uint32_t word = 0;
+			for (size_t j = 32; j > 0; j--)
+				if (i + j - 1 < binaryDigits.size())
+					word = (word << 1) + binaryDigits[i + j - 1];
+
+			words.push_back(word);
+		}
+		if (words.empty())
+			words.push_back(0);
+	}		
+}
+
 BigInt::BigInt(const BigInt& that) : positive(that.positive), words(that.words)
 {
 }
@@ -75,33 +143,26 @@ bool BigInt::operator<(const BigInt& that) const
 	if (positive != that.positive)
 		return !positive;
 
+	else if (words.size() < that.words.size())
+		return positive;
+
+	else if (words.size() > that.words.size())
+		return !positive;
+
 	else if (positive)
-	{
-		if (words.size() < that.words.size())
-			return true;
-		else if (words.size() > that.words.size())
-			return false;
-		else
-			/* We perform a lexographcial compare which returns true if words
-			 * reversed is less lexicographically than that.words.
-			 */
-			return std::lexicographical_compare(words.crbegin(), words.crend(),
-				that.words.crbegin(), that.words.crend());
-	}
+		/* We perform a lexographcial compare which returns true if words
+		 * reversed is less lexicographically than that.words.
+		 */
+		return std::lexicographical_compare(words.crbegin(), words.crend(),
+			that.words.crbegin(), that.words.crend());
+
 	else
-	{
-		if (words.size() < that.words.size())
-			return false;
-		else if (words.size() > that.words.size())
-			return true;
-		else
-			/* We check using std::greater as the absolute value of this is
-			 * greater than the absolute value of that, then this is larger.
-			 */
-			return std::lexicographical_compare(words.crbegin(), words.crend(),
-				that.words.crbegin(), that.words.crend(), 
-				std::greater<BigInt>());
-	}
+		/* We check using std::greater as the absolute value of this is
+		 * greater than the absolute value of that, then this is larger.
+		 */
+		return std::lexicographical_compare(words.crbegin(), words.crend(),
+			that.words.crbegin(), that.words.crend(), 
+			std::greater<BigInt>());
 }
 
 bool BigInt::operator<(const uint32_t that) const
@@ -224,7 +285,7 @@ uint32_t BigInt::operator%(const uint32_t that) const
 	if (*this < BigInt(that))
 		return words[0];
 
-	for (auto word = words.crbegin(); word != words.crend(); word++)
+	for (auto word = words.crbegin(); word != words.crend(); ++word)
 	{
 		remainder = ((remainder << 32) + *word) % that;
 	}
@@ -383,7 +444,7 @@ BigInt& BigInt::operator/=(const uint32_t that)
 {
 	uint64_t remainder = 0;
 
-	for (auto word = words.rbegin(); word != words.rend(); word++)
+	for (auto word = words.rbegin(); word != words.rend(); ++word)
 	{
 		remainder = (remainder << 32) + static_cast<uint64_t>(*word);
 		*word = static_cast<uint32_t>(remainder / that);
@@ -436,15 +497,18 @@ BigInt::operator std::string() const
 		BigInt copy(*this);
 		uint32_t digits;
 
+		if (!positive)
+		{
+			builder << '-';
+			copy.negate();
+		}
+
 		while (copy > zero)
 		{
 			digits = copy % divisor;
 			copy /= divisor;
 			parts.push(digits);
 		}
-
-		if (!positive)
-			builder << '-';
 
 		while (!parts.empty())
 		{

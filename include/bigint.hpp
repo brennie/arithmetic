@@ -13,7 +13,7 @@ class BigInt
 public:
 	BigInt();
 	BigInt(const uint32_t that);
-	//BigInt(const std::string& str);
+	BigInt(const std::string& str);
 	BigInt(const BigInt& that);
 	BigInt(BigInt&& that);
 
@@ -71,6 +71,7 @@ public:
 private:
 	static BigInt zero;
 	static BigInt one;
+	static BigInt ten;
 
 	bool positive;
 
