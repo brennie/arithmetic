@@ -208,6 +208,7 @@ bool test_rshift()
 
 	vector<Test> tests
 	{
+		{"1", 32, "0"},
 		{"18446744073709551615", 31, "8589934591"},
 		{"18446744073709551615", 32, "4294967295"},
 		{"18446744073709551615", 33, "2147483647"}
@@ -224,7 +225,45 @@ bool test_rshift()
 			cout << " == " << test.result << endl;
 		else
 		{
-			cout << " != " << test.result << "( got " << (string)shifted << " instead)" << endl;
+			cout << " != " << test.result << " (got " << (string)shifted << " instead)" << endl;
+			success = false;
+		}
+	}
+
+	return success;
+}
+
+bool test_lshift()
+{
+	bool success = true;
+
+	struct Test
+	{
+		string value;
+		size_t shift;
+		string result;
+	};
+
+	vector<Test> tests
+	{
+		{"1", 32, "4294967296"},
+		{"8589934591", 31, "18446744071562067968"},
+		{"4294967295", 32, "18446744069414584320"},
+		{"2147483647", 33, "18446744065119617024"}
+	};
+
+	cout << "test_lshift:" << endl;
+	for (auto test : tests)
+	{
+		BigInt value(test.value), result(test.result);
+		BigInt shifted(value << test.shift);
+
+		cout << test.value << " << " << test.shift;
+		if (shifted == result)
+			cout << " == " << test.result << endl;
+		else
+		{
+			cout << " != " << test.result << " (got " << (string)shifted << " instead)" << endl;
 			success = false;
 		}
 	}
@@ -242,7 +281,8 @@ int main()
 		test_sign,
 		test_addition,
 		test_subtraction,
-		test_rshift
+		test_rshift,
+		test_lshift
 	};
 
 	for (auto test : tests)

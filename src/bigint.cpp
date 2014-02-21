@@ -539,16 +539,41 @@ BigInt& BigInt::operator%=(const BigInt& that)
 
 BigInt& BigInt::operator<<=(const uint32_t that)
 {
-	size_t words = that / 32;
-	size_t bits = that % 32;
+	size_t wordShifts = that / 32;
+	size_t bitShifts = that % 32;
 
-	if (bits > 0)
-		words++;
+	if (bitShifts != 0)
+	{
+		wordShifts++;
+		bitShifts = 32 - bitShifts;
+	}
+
+	if (wordShifts != 0)
+	{
+		const size_t newSize = words.size() + wordShifts;
+
+
+		words.resize(newSize, 0);
 
 
 
-	if (bits > 0)
-		*this >>= 32 - bits;
+		std::copy_backward(words.begin(), words.begin() + wordShifts, words.end());
+		for (size_t i = 0; i < newSize - wordShifts; i++)
+			words[newSize - i - 1] = words[newSize - i - wordShifts - 1];
+
+
+		
+		for (size_t i = newSize - wordShifts; i < newSize; i++)
+			words[newSize - i - 1] = 0;
+
+	}
+
+	if (bitShifts != 0)
+	{
+		*this >>= bitShifts;
+
+		trim();
+	}
 
 	return *this;
 }
@@ -558,7 +583,13 @@ BigInt& BigInt::operator>>=(const uint32_t that)
 	size_t wordShifts = that / 32;
 	size_t bitShifts = that % 32;
 
-	if (wordShifts)
+	if (that >= size())
+	{
+		*this = zero;
+		return *this;
+	}
+
+	if (wordShifts != 0)
 	{
 		const size_t oldSize = words.size();
 
@@ -569,7 +600,7 @@ BigInt& BigInt::operator>>=(const uint32_t that)
 			words.pop_back();
 	}
 
-	if (bitShifts)
+	if (bitShifts != 0)
 	{
 		const uint32_t mask = (1 << bitShifts) - 1;
 		uint32_t lastHigh = 0, nextHigh = 0;
