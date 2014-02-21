@@ -1,53 +1,8 @@
+#include <algorithm>
 #include <cctype>
 #include <stdexcept>
 
 #include "bigint.hpp"
-
-
-BigInt::Compare BigInt::compare(const BigInt& left, const BigInt& right)
-{
-	if (left.positive != right.positive)
-	{
-		if (left.positive)
-			return Compare::GreaterThan;
-		else
-			return Compare::LessThan;
-	}
-	else if (left.positive)
-	{
-		if (left.size > right.size)
-			return Compare::GreaterThan;
-		else if (left.size < right.size)
-			return Compare::LessThan;
-
-		for (size_t i = left.size; i > 0; i--)
-		{
-			if (left.words[i - 1] < right.words[i - 1])
-				return Compare::LessThan;
-			else if (left.words[i - 1] > right.words[i - 1])
-				return Compare::GreaterThan;
-		}
-
-		return Compare::Equal;
-	}
-	else
-	{
-		if (left.size > right.size)
-			return Compare::LessThan;
-		else if (left.size < right.size)
-			return Compare::GreaterThan;
-
-		for (size_t i = left.size; i > 0; i--)
-		{
-			if (left.words[i - 1] < right.words[i - 1])
-				return Compare::GreaterThan;
-			else if (left.words[i - 1] > right.words[i - 1])
-				return Compare::LessThan;
-		}
-
-		return Compare::Equal;
-	}
-}
 
 BigInt::BigInt(const int32_t value) : positive(value >= 0), size(1)
 {
@@ -68,6 +23,67 @@ BigInt& BigInt::operator=(BigInt&& that)
 	words = std::move(that.words);
 
 	return *this;
+}
+
+bool BigInt::operator==(const BigInt& that) const
+{
+	if (positive != that.positive || size != that.size)
+		return false;
+
+	return std::equal(words.cbegin(), words.cend(), that.words.cbegin());
+}
+
+bool BigInt::operator!=(const BigInt& that) const
+{
+	return !(*this == that);
+}
+
+bool BigInt::operator<(const BigInt& that) const
+{
+	if (positive != that.positive)
+		return !positive;
+
+	else if (positive)
+	{
+		if (size < that.size)
+			return true;
+		else if (size > that.size)
+			return false;
+		else
+			/* We perform a lexographcial compare which returns true if words
+			 * reversed is less lexicographically than that.words.
+			 */
+			return std::lexicographical_compare(words.crbegin(), words.crend(),
+				that.words.crbegin(), that.words.crend());
+	}
+	else
+	{
+		if (size < that.size)
+			return false;
+		else if (size > that.size)
+			return true;
+		else
+			/* We check using std::greater as the absolute value of this is
+			 * greater than the absolute value of that, then this is larger.
+			 */
+			return std::lexicographical_compare(words.crbegin(), words.crend(),
+				that.words.crbegin(), that.words.crend(), std::greater<BigInt>());
+	}
+}
+
+bool BigInt::operator>(const BigInt& that) const
+{
+	return that < *this;
+}
+
+bool BigInt::operator<=(const BigInt& that) const
+{
+	return !(that < *this);
+}
+
+bool BigInt::operator>=(const BigInt& that) const
+{
+	return !(*this < that);
 }
 
 BigInt BigInt::operator-() const
@@ -189,35 +205,7 @@ BigInt& BigInt::operator-=(const BigInt& that)
 	return *this;
 }
 
-bool operator==(const BigInt& left, const BigInt& right)
-{
-	return BigInt::compare(left, right) == BigInt::Compare::Equal;
-}
 
-bool operator!=(const BigInt& left, const BigInt& right)
-{
-	return BigInt::compare(left, right) != BigInt::Compare::Equal;
-}
-
-bool operator<(const BigInt& left, const BigInt& right)
-{
-	return BigInt::compare(left, right) == BigInt::Compare::LessThan;
-}
-
-bool operator>(const BigInt& left, const BigInt& right)
-{
-	return BigInt::compare(left, right) == BigInt::Compare::GreaterThan;
-}
-
-bool operator>=(const BigInt& left, const BigInt& right)
-{
-	return BigInt::compare(left, right) != BigInt::Compare::LessThan;
-}
-
-bool operator<=(const BigInt& left, const BigInt& right)
-{
-	return BigInt::compare(left, right) != BigInt::Compare::GreaterThan;
-}
 
 void BigInt::trim()
 {
