@@ -1,9 +1,10 @@
 #include <algorithm>
-#include <functional>
 #include <cctype>
+#include <functional>
+#include <iomanip>
+#include <sstream>
 #include <stack>
 #include <stdexcept>
-#include <sstream>
 
 #include "bigint.hpp"
 
@@ -59,7 +60,7 @@ BigInt::BigInt(const std::string& str) : positive(true)
 		while (!digits.empty())
 		{
 			uint32_t remainder = 0;
-			
+
 			for (auto digit = digits.rbegin(); digit != digits.rend(); ++digit)
 			{
 				*digit += remainder * 10;
@@ -69,7 +70,7 @@ BigInt::BigInt(const std::string& str) : positive(true)
 
 			binaryDigits.push_back(remainder == 1);
 
-			while (digits[digits.size() - 1] == 0)
+			while (digits.back() == 0)
 				digits.pop_back();
 		}
 
@@ -79,12 +80,16 @@ BigInt::BigInt(const std::string& str) : positive(true)
 			uint32_t word = 0;
 			for (size_t j = 32; j > 0; j--)
 				if (i + j - 1 < binaryDigits.size())
-					word = (word << 1) + binaryDigits[i + j - 1];
+					word = (word << 1) + (unsigned)binaryDigits[i + j - 1];
 
 			words.push_back(word);
 		}
+
 		if (words.empty())
 			words.push_back(0);
+
+		if (isZero() && !positive)
+			throw std::invalid_argument("invalid number string");
 	}		
 }
 
@@ -492,7 +497,8 @@ BigInt::operator std::string() const
 	else
 	{
 		std::stringstream builder;
-		std::stack<uint32_t> parts;
+		std::string part;
+		std::stack<std::string> parts;
 
 		BigInt copy(*this);
 		uint32_t digits;
@@ -502,23 +508,43 @@ BigInt::operator std::string() const
 			builder << '-';
 			copy.negate();
 		}
-
-		while (copy > zero)
+		int i = 0;
+		while (!copy.isZero())
 		{
-			digits = copy % divisor;
-			copy /= divisor;
-			parts.push(digits);
+			std::stringstream partBuilder;
+
+			if (copy > divisor)
+			{
+				digits = copy % divisor;
+				copy /= divisor;
+
+				partBuilder << std::setw(9) << std::setfill('0') << digits;
+			}
+			else
+			{
+				digits = copy.words.back();
+				copy = zero;
+				partBuilder << digits;
+			}
+
+			partBuilder >> part;
+			parts.push(part);
+			i++;
 		}
 
 		while (!parts.empty())
 		{
-			digits = parts.top();
+			builder << parts.top();
 			parts.pop();
-			builder << digits;
 		}
 
 		return builder.str();
 	}
+}
+
+bool BigInt::isZero() const
+{
+	return words.size() == 1 && words.back() == 0;
 }
 
 void BigInt::trim()

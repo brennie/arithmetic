@@ -68,6 +68,8 @@ public:
 
 	operator std::string() const;
 
+	bool isZero() const;
+
 private:
 	static BigInt zero;
 	static BigInt one;

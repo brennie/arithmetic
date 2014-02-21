@@ -1,7 +1,7 @@
-SRC=src/bigint.cpp src/main.cpp
+SRC=src/bigint.cpp src/tests.cpp
 CXXFLAGS=-std=c++11 -Iinclude -Wall -Wextra -Werror
 
-all: arithmetic.exe
+all: tests.exe
 
-arithmetic.exe: $(SRC)
-	g++ $(CXXFLAGS) $(SRC) -o arithmetic.exe
+tests.exe: $(SRC)
+	g++ $(CXXFLAGS) $(SRC) -o tests.exe
