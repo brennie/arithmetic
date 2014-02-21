@@ -7,132 +7,76 @@
 #include <string>
 #include <vector>
 
-/**
- * \brief An arbitrary precision integer.
- */
+
 class BigInt
 {
 public:
-	/**
-	 * \brief Initialize a BigInt.
-	 * \param that The value to initialize to.
-	 */
-	BigInt(int value);
-
-	/**
-	 * \brief Copy-construct a BigInt from that.
-	 * \param that The value to copy.
-	 */
+	BigInt();
+	BigInt(const uint32_t that);
+	//BigInt(const std::string& str);
 	BigInt(const BigInt& that);
-
-	/**
-	 * \brief Move-construct a BigInt.
-	 * \param that The value to move.
-	 */
 	BigInt(BigInt&& that);
 
-	/**
-	 * \brief Move-assign a BigInt.
-	 * \param that The value to move.
-	 * \return The object assigned to.
-	 */
+	BigInt& operator=(BigInt& that);
 	BigInt& operator=(BigInt&& that);
 
-
-	/**
-	 * \brief Compare for equality.
-	 * \param that The value to compare against.
-	 * \return Whether the two values are equal.
-	 */
 	bool operator==(const BigInt& that) const;
+	bool operator==(const uint32_t that) const;
 
-	/**
-	 * \brief Compare for inequailty.
-	 * \param that The value to compare against.
-	 * \return Whether the two values aren't equal.
-	 */
 	bool operator!=(const BigInt& that) const;
+	bool operator!=(const uint32_t that) const;
 
-	/**
-	 * \brief Check if this value is less than another.
-	 * \param that The value to compare against.
-	 * \return Whether this value is less than the other.
-	 */
 	bool operator<(const BigInt& that) const;
+	bool operator<(const uint32_t that) const;
 
-	/**
-	 * \brief Check if this value is greater than another.
-	 * \param that The value to compare against.
-	 * \return Whether this value is greater than the other.
-	 */
 	bool operator>(const BigInt& that) const;
+	bool operator>(const uint32_t that) const;
 
-	/**
-	 * \brief Check if this value is less than another or equal to it.
-	 * \param that The value to compare against.
-	 * \return Whether this value is less than the other or equal to it.
-	 */
 	bool operator<=(const BigInt& that) const;
+	bool operator<=(const uint32_t that) const;
 
-	/**
-	 * \brief Check if this value is greater than another or equal to it.
-	 * \param that The value to compare against.
-	 * \return Whether this value is greater than the other or equal to it.
-	 */
 	bool operator>=(const BigInt& that) const;
+	bool operator>=(const uint32_t that) const;
 
-
-	/**
-	 * \brief Negate a BigInt.
-	 * \return The value negated.
-	 */
 	BigInt operator-() const;
+	void negate();
 
-	/**
-	 * \brief Add two BigInts.
-	 * \param that The value to add to this.
-	 * \return The sum.
-	 */
+	BigInt operator++();
+	BigInt& operator++(const int);
+
+	BigInt operator--();
+	BigInt& operator--(const int);
+
 	BigInt operator+(const BigInt& that) const;
 
-	/**
-	 * \brief Subtract two BigInts.
-	 * \param that The value to subtract from this.
-	 * \param The difference.
-	 */
 	BigInt operator-(const BigInt& that) const;
 
-	/**
-	 * \brief Add that to this.
-	 * \param that The value to add to this.
-	 * \return This.
-	 */
+	BigInt operator/(const BigInt& that) const;
+	BigInt operator/(const uint32_t that) const;
+	
+	BigInt operator%(const BigInt& that) const;
+	uint32_t operator%(const uint32_t that) const;
+
 	BigInt& operator+=(const BigInt& that);
 
-	/**
-	 * \brief Subtract that from this.
-	 * \param that The value to subtract from this.
-	 * \return This.
-	 */
 	BigInt& operator-=(const BigInt& that);
 
+	BigInt& operator/=(const BigInt& that);
+	BigInt& operator/=(const uint32_t that);
+
+	BigInt& operator%=(const BigInt& that);
+
+	operator std::string() const;
+
 private:
-	bool positive; /*< True if the number is positive. */
-	
-	/**
-	 * \brief The number of words we are using. This may be less than
-	 * words.size() as it possible to over-allocate memory.
-	 */
-	size_t size;
+	static BigInt zero;
+	static BigInt one;
 
-	std::vector<uint32_t> words; /*< The number stored as 32-bit words. */
+	bool positive;
 
-	/**
-	 * \brief Trim the zeroes from the big end of the number.
-	 */
+	std::vector<uint32_t> words;
+
 	void trim();
 };
-
-
 
 #endif

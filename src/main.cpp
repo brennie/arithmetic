@@ -1,4 +1,4 @@
-#include <cassert>
+#include <iostream>
 
 #include "BigInt.hpp"
 
@@ -14,9 +14,10 @@ int main()
 	for (size_t i = 0; i < 10; i++)
 		value += j;
 
+	cout << (string)value << endl;
+
 	for (size_t i = 0; i < 10; i++)
 		value -= j;
 
-	assert(value == zero);
 	return 0;
 }
