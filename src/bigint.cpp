@@ -301,110 +301,144 @@ uint32_t BigInt::operator%(const uint32_t that) const
 BigInt& BigInt::operator+=(const BigInt& that)
 {
 	if (positive && !that.positive)
-	{
-		*this -= -that;
-		trim();
-	}
+		return *this -= that.words;
 	else if (!positive && that.positive)
 	{
-		*this = that - *this;
-		trim();
+		BigInt copy(that);
+		copy -= words;
+		*this = std::move(copy);
+		return *this;
+	}
+	else
+		return *this += that.words;
+}
+
+BigInt& BigInt::operator+=(const BigInt::Words& that)
+{
+	bool thisSmaller = words.size() < that.size();
+
+	const BigInt::Words& larger = thisSmaller ? that : words;
+	const BigInt::Words& smaller = thisSmaller ? words : that;
+
+	uint32_t carry = 0;
+
+	for (size_t i = 0; i < larger.size(); i++)
+	{
+		uint64_t sum;
+		if (i < smaller.size())
+		{
+			sum = static_cast<uint64_t>(carry) + static_cast<uint64_t>(words[i]) + static_cast<uint64_t>(that[i]);
+
+			words[i] = static_cast<uint32_t>(sum);
+		}
+		else
+		{
+			sum = static_cast<uint64_t>(carry) + static_cast<uint64_t>(larger[i]);
+
+			if (thisSmaller)
+				words.push_back(static_cast<uint32_t>(sum));
+			else
+				words[i] = static_cast<uint32_t>(sum);
+		}
+		carry = sum >> 32;
+	}
+
+	if (carry != 0)
+		words.push_back(carry);
+
+	return *this;
+
+}
+
+BigInt& BigInt::operator-=(const BigInt& that)
+{
+	/* If the signs are different, the number gets either more strictly positive
+	 * or more strictly negative, so we increase |this|.
+	 */
+	if (positive != that.positive)
+		*this += that.words;
+
+	else if (*this >= that)
+	{
+		/* Since both are positive, |that| = that. */
+		if (positive)
+			*this -= that.words;
+
+		/* Since both are negative and this > that (i.e. this is strictly less
+		 * negative than that) and we have:
+		 *
+		 * this - that = -|this| - (-|that|)
+		 *             = -|this| + |that|
+		 *             = |that| - |this|
+		 */
+		else
+		{
+			BigInt copy(that);
+			copy.positive = true;
+			copy -= words;
+			*this = std::move(copy);
+		}
 	}
 	else
 	{
-		const BigInt& smaller = std::min(*this, that);
-		const BigInt& larger = std::max(*this, that);
-
-		uint32_t carry = 0;
-
-		for (size_t i = 0; i < larger.words.size(); i++)
+		/* Since both are positive and this < that:
+		 *
+		 * this - that = -(that - this)
+		 */
+		if (positive)
 		{
-			uint64_t sum;
-			if (i < smaller.words.size())
-			{
-				sum = static_cast<uint64_t>(carry) + static_cast<uint64_t>(words[i]) + static_cast<uint64_t>(that.words[i]);
-
-				words[i] = sum & 0xFFFFFFFF;
-			}
-			else
-			{
-				sum = static_cast<uint64_t>(carry) + static_cast<uint64_t>(larger.words[i]);
-
-				if (this == &smaller)
-					words.push_back(sum & 0xFFFFFFFF);
-				else
-					words[i] = sum & 0xFFFFFFFF;
-			}
-			carry = sum >> 32;
+			BigInt copy(that);
+			copy -= words;
+			*this = std::move(copy);
+			positive = false;
 		}
-
-		if (carry != 0)
-			words.push_back(carry);
-
+		/* Since both are negative and this < that (i.e. this is more strictly
+		 * negative than that), we have:
+		 *
+		 * this - that = -|this| - (-|that|)
+		 *             = -|this| + |that|
+		 *             = - ( |this| - |that| )
+		 */
+		else
+		{
+			*this -= that.words;
+			positive = false;
+		}
 	}
 
 	return *this;
 }
 
-BigInt& BigInt::operator-=(const BigInt& that)
-{
+BigInt& BigInt::operator-=(const BigInt::Words& that)
+{ 
 	const uint64_t borrow = 0x100000000ull;
 
-	if (positive && !that.positive)
-		return *this += -that;
-
-	else if (!positive && that.positive)
-	{
-		/* We subtract |this| from that */
-		BigInt copy(that);
-		positive = true;
-		copy -= *this;
-		*this = std::move(copy);
-	}
-	else if ((positive && that > *this))
-		*this = that - *this;
-
-	else if (!positive)
-	{
-		negate();
-		*this += -that;
-		negate();
-	}
-	else
-	{
-		bool shouldBorrow = false;
-
-		for (size_t i = 0; i < words.size(); i++)
+	for (size_t i = 0; i < words.size(); i++)
+	{	
+		if (i < that.size())
 		{
-			if (shouldBorrow)
-			{
-				shouldBorrow = false;
-				words[i] -= 1;
-			}
-			
-			if (i < that.words.size())
-			{
-				if (words[i] >= that.words[i])
-					words[i] -= that.words[i];
-				else
-				{
-					uint64_t sum = words[i] + borrow;
-					sum -= that.words[i];
-
-					words[i] = static_cast<uint32_t>(sum);
-
-					shouldBorrow = true;
-				}
-			}
+			if (words[i] >= that[i])
+				words[i] -= that[i];
 			else
-				/* Since we are guaranteed that *this > that, we can stop here
-				 * as no more words will change; the last possible word that
-				 * could change is the one we just processed and that
-				 * is just subtracting 1 if we borrowed.
-				 */
-				break;
-		}
+			{
+				uint64_t sum = borrow + static_cast<uint64_t>(words[i]) - static_cast<uint64_t>(that[i]);
+				size_t j = i + 1;
 
+				words[i] = static_cast<uint32_t>(sum);
+
+				/* We perform the borrow; if any words to the left are 0, they
+				 * become the maximum value and we continue borrowing from the
+				 * left.
+				 */
+				while (words[j] == 0)
+				{
+					words[j++] = 0xFFFFFFFF;
+				}
+				
+				/* The last word we borrow from is decreased. */
+				--words[j];
+			}
+		}
 	}
 
 	trim();
@@ -441,6 +475,8 @@ BigInt& BigInt::operator/=(const BigInt& that)
 			value -= that;
 		}
 	}
+
+	trim();
 
 	return *this;
 }
@@ -508,7 +544,7 @@ BigInt::operator std::string() const
 			builder << '-';
 			copy.negate();
 		}
-		int i = 0;
+
 		while (!copy.isZero())
 		{
 			std::stringstream partBuilder;
@@ -529,7 +565,6 @@ BigInt::operator std::string() const
 
 			partBuilder >> part;
 			parts.push(part);
-			i++;
 		}
 
 		while (!parts.empty())
@@ -545,6 +580,16 @@ BigInt::operator std::string() const
 bool BigInt::isZero() const
 {
 	return words.size() == 1 && words.back() == 0;
+}
+
+bool BigInt::isPositive() const
+{
+	return positive;
+}
+
+bool BigInt::isNegative() const
+{
+	return !positive;
 }
 
 void BigInt::trim()

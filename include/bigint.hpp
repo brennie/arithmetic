@@ -57,6 +57,10 @@ public:
 	BigInt operator%(const BigInt& that) const;
 	uint32_t operator%(const uint32_t that) const;
 
+	BigInt& operator<<(const uint32_t that);
+
+	BigInt& operator>>(const uint32_t that);
+
 	BigInt& operator+=(const BigInt& that);
 
 	BigInt& operator-=(const BigInt& that);
@@ -66,18 +70,29 @@ public:
 
 	BigInt& operator%=(const BigInt& that);
 
+	BigInt& operator<<=(const uint32_t that);
+	
+	BigInt& operator>>=(const uint32_t that);
+
 	operator std::string() const;
 
 	bool isZero() const;
+	bool isPositive() const;
+	bool isNegative() const;
 
 private:
+	typedef std::vector<uint32_t> Words;
+
 	static BigInt zero;
 	static BigInt one;
 	static BigInt ten;
 
 	bool positive;
 
-	std::vector<uint32_t> words;
+	BigInt::Words words;
+
+	BigInt& operator+=(const BigInt::Words& that);
+	BigInt& operator-=(const BigInt::Words& that);
 
 	void trim();
 };
