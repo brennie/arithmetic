@@ -74,16 +74,7 @@ BigInt::BigInt(const std::string& str) : positive(true)
 				digits.pop_back();
 		}
 
-		/* We now construct individual base-32 numbers out of our binary digits. */
-		for (size_t i = 0; i < binaryDigits.size(); i += 32)
-		{
-			uint32_t word = 0;
-			for (size_t j = 32; j > 0; j--)
-				if (i + j - 1 < binaryDigits.size())
-					word = (word << 1) + (uint32_t)binaryDigits[i + j - 1];
-
-			words.push_back(word);
-		}
+		words = BigInt::binaryToWords(binaryDigits);
 
 		if (words.empty())
 			words.push_back(0);
@@ -486,11 +477,10 @@ BigInt& BigInt::operator/=(const BigInt& that)
 	return *this;
 }
 
-BigInt BigInt::operator/(const BigInt::Words& that)
+BigInt BigInt::operator/(const BigInt::Words& that) const
 {
 	BigInt dividend(*this);
 	BigInt divisor(that);
-	BigInt result;
 
 	std::vector<bool> binaryDigits;
 
@@ -519,18 +509,9 @@ BigInt BigInt::operator/(const BigInt::Words& that)
 
 	binaryDigits.push_back(divisor <= dividend);
 
-	result.words.clear();
+	std::reverse(binaryDigits.begin(), binaryDigits.end());
 
-	for (int i = (int)binaryDigits.size() - 32; i >= -31; i -= 32)
-	{
-		unsigned int x = 0;
-			for (int j = 0; j < 32; ++j)
-				if ((i + j >= 0) && (i + j < (int) binaryDigits.size()))
-					x = (x << 1) + binaryDigits[i + j];
-		result.words.push_back(x);
-	}
-
-	return result;
+	return BigInt(binaryToWords(binaryDigits));
 }
 
 BigInt& BigInt::operator/=(const uint32_t that)
@@ -595,13 +576,10 @@ BigInt& BigInt::operator<<=(const uint32_t that)
 
 		words.resize(newSize, 0);
 
-		std::copy_backward(words.begin(), words.begin() + wordShifts, words.end());
-		for (size_t i = 0; i < newSize - wordShifts; i++)
-			words[newSize - i - 1] = words[newSize - i - wordShifts - 1];
+		std::copy_backward(words.begin(), words.end() - wordShifts, words.end());
 
 		for (size_t i = newSize - wordShifts; i < newSize; i++)
 			words[newSize - i - 1] = 0;
-
 	}
 
 	if (bitShifts != 0)
@@ -628,9 +606,8 @@ BigInt& BigInt::operator>>=(const uint32_t that)
 	if (wordShifts != 0)
 	{
 		const size_t oldSize = words.size();
-
-		for(size_t i = 0; i < oldSize - wordShifts; i++)
-			words[i] = words[i + wordShifts];
+		
+		std::copy(words.begin() + wordShifts, words.end(), words.begin());
 
 		while (words.size() != oldSize - wordShifts)
 			words.pop_back();
@@ -744,4 +721,21 @@ void BigInt::trim()
 	/* We always ensure that the words.size() is at least one (even if words[0] == 0). */
 	while (words.size() > 1 && words.back() == 0)
 		words.pop_back();
+}
+
+BigInt::Words BigInt::binaryToWords(const std::vector<bool>& binaryDigits)
+{
+	Words words;
+
+	for (size_t i = 0; i < binaryDigits.size(); i += 32)
+	{
+		uint32_t word = 0;
+		for (size_t j = 32; j > 0; j--)
+			if (i + j - 1 < binaryDigits.size())
+				word = (word << 1) + (uint32_t)binaryDigits[i + j - 1];
+
+		words.push_back(word);
+	}
+
+	return words;
 }

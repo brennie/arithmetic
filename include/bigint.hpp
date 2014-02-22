@@ -100,9 +100,11 @@ private:
 	
 	BigInt& operator-=(const BigInt::Words& that);
 
-	BigInt operator/(const BigInt::Words& that);
+	BigInt operator/(const BigInt::Words& that) const;
 
 	void trim();
+
+	static Words binaryToWords(const std::vector<bool>& binary);
 };
 
 #endif
