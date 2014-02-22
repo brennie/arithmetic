@@ -53,6 +53,9 @@ public:
 
 	BigInt operator/(const BigInt& that) const;
 	BigInt operator/(const uint32_t that) const;
+
+	BigInt operator*(const BigInt& that) const;
+	BigInt operator*(const uint32_t that) const;
 	
 	BigInt operator%(const BigInt& that) const;
 	uint32_t operator%(const uint32_t that) const;
@@ -67,6 +70,9 @@ public:
 
 	BigInt& operator/=(const BigInt& that);
 	BigInt& operator/=(const uint32_t that);
+
+	BigInt& operator*=(const BigInt& that);
+	BigInt& operator*=(const uint32_t that);
 
 	BigInt& operator%=(const BigInt& that);
 
@@ -101,7 +107,7 @@ private:
 
 	BigInt& operator%=(const BigInt::Words& that);
 
-	size_t split(BigInt& high, BigInt& low) const;
+	//size_t split(BigInt& high, BigInt& low) const;
 
 	void trim();
 
