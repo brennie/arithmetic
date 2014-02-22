@@ -92,14 +92,16 @@ private:
 
 	BigInt::Words words;
 
-	BigInt(const BigInt::Words& that);
-	BigInt(const BigInt::Words&& that);
+	BigInt(const BigInt::Words& that, bool sign = true);
+	BigInt(const BigInt::Words&& that, bool sign = true);
 
 	BigInt& operator+=(const BigInt::Words& that);
 	
 	BigInt& operator-=(const BigInt::Words& that);
 
-	BigInt operator/(const BigInt::Words& that) const;
+	BigInt& operator%=(const BigInt::Words& that);
+
+	size_t split(BigInt& high, BigInt& low) const;
 
 	void trim();
 

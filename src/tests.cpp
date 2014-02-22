@@ -289,8 +289,13 @@ bool test_division()
 		{"256", "16", "16"},
 		{"1293847", "1234", "1048"},
 		{"4294967295", "1024", "4194303"},
-		{"341234918273418923412341234","12341234123412","27649983369659"}
-
+		{"341234918273418923412341234","12341234123412","27649983369659"},
+		{"12341234123947819", "123471", "99952491872"},
+		{"-12341234123947819", "123471", "-99952491873"},
+		{"23419283471289374", "1289347128934", "18163"},
+		{"23419283471289374", "-1289347128934", "-18164"},
+		{"-1890234189234", "-1293478", "1461357"},
+		{"-110535373948910675079005112", "8956589984726", "-12341234123412"}
 	};
 
 	cout << "test_division:" << endl;
@@ -312,6 +317,42 @@ bool test_division()
 	return success;
 }
 
+bool test_mod()
+{
+	bool success = true;
+
+	struct Test
+	{
+		string left, right, result;
+	};
+
+	vector<Test> tests
+	{
+		{"256", "16", "0"},
+		{"1293847", "1234", "615"},
+		{"4294967295", "1024", "1023"},
+		{"341234918273418923412341234","12341234123412","8956589984726"}
+	};
+
+	cout << "test_mod:" << endl;
+	for (auto test : tests)
+	{
+		BigInt left(test.left), right(test.right), result(test.result);
+		BigInt sum(left % right);
+		if (sum == result)
+			cout << test.left << " % " << test.right << " == " << test.result << endl;
+		else
+		{
+			cout << test.left << " % " << test.right << " != " << test.result
+		         << " (got " << (string)sum << " instead)" << endl;
+
+		    success = false;
+		}
+	}
+
+	return success;
+}
+
 int main()
 {
 	size_t successes = 0;
@@ -324,7 +365,8 @@ int main()
 		test_subtraction,
 		test_rshift,
 		test_lshift,
-		test_division
+		test_division,
+		test_mod
 	};
 
 	for (auto test : tests)

@@ -92,11 +92,11 @@ BigInt::BigInt(BigInt&& that) : positive(that.positive), words(std::move(that.wo
 {
 }
 
-BigInt::BigInt(const BigInt::Words& that) : positive(true), words(that)
+BigInt::BigInt(const BigInt::Words& that, bool sign) : positive(sign), words(that)
 {
 }
 
-BigInt::BigInt(const BigInt::Words&& that) : positive(true), words(that)
+BigInt::BigInt(const BigInt::Words&& that, bool sign) : positive(sign), words(that)
 {
 }
 
@@ -461,30 +461,21 @@ BigInt& BigInt::operator-=(const BigInt::Words& that)
 
 BigInt& BigInt::operator/=(const BigInt& that)
 {
-	if (*this < that)
-		return zero;
-
-	else if (that == zero)
+	if (that.isZero())
 		throw std::invalid_argument("division by zero");
+	else if (positive && *this < that)
+		return *this = zero;
 
-	bool newPositive = positive == that.positive;
+	bool signsDiffer = positive != that.positive;
 
-	*this = *this / that.words;
-	positive = newPositive;
-
-	trim();
-
-	return *this;
-}
-
-BigInt BigInt::operator/(const BigInt::Words& that) const
-{
 	BigInt dividend(*this);
 	BigInt divisor(that);
 
+	size_t shift = dividend.size() - divisor.size();
+
 	std::vector<bool> binaryDigits;
 
-	size_t shift = dividend.size() - divisor.size();
+	dividend.positive = divisor.positive = true;
 
 	divisor <<= shift;
 	while (divisor > dividend)
@@ -507,11 +498,24 @@ BigInt BigInt::operator/(const BigInt::Words& that) const
 		divisor >>= 1;
 	}
 
-	binaryDigits.push_back(divisor <= dividend);
+	if (dividend >= divisor)
+	{
+		binaryDigits.push_back(true);
+		dividend -= divisor;
+	}
+	else
+		binaryDigits.push_back(false);
 
 	std::reverse(binaryDigits.begin(), binaryDigits.end());
+	
+	*this = BigInt(BigInt::binaryToWords(binaryDigits), positive == that.positive);
 
-	return BigInt(binaryToWords(binaryDigits));
+	if (signsDiffer && !dividend.isZero())
+		*this -= 1;
+
+	trim();
+
+	return *this;
 }
 
 BigInt& BigInt::operator/=(const uint32_t that)
@@ -534,28 +538,42 @@ BigInt& BigInt::operator/=(const uint32_t that)
 
 BigInt& BigInt::operator%=(const BigInt& that)
 {
-	if (positive && !that.positive)
+	*this %= that.words;
+	
+	if (positive != that.positive)
 	{
-		*this /= -that;
-		positive = false;
+		*this = that - *this;
+
+		if (!that.positive)
+			positive = false;
 	}
-	else if (!positive && that.positive)
+	return *this;
+}
+
+BigInt& BigInt::operator%=(const BigInt::Words& that)
+{
+	BigInt divisor(that);
+	size_t shift = size() - divisor.size();
+
+	divisor <<= shift;
+	while (divisor > *this)
 	{
-		positive = true;
-		*this /= that;
-		positive = false;
-	}
-	else if (!positive && !that.positive)
-	{
-		positive = true;
-		*this /= -that;
-	}
-	else
-	{
-		while (*this >= that)
-			*this -= that;
+		divisor >>= 1;
+		shift--;
 	}
 
+	while (shift)
+	{
+		if (*this >= divisor)
+			*this -= divisor;
+
+		--shift;
+		divisor >>= 1;
+	}
+
+	if (*this >= divisor)
+		*this -= divisor;
+	
 	return *this;
 }
 
@@ -725,7 +743,7 @@ void BigInt::trim()
 
 BigInt::Words BigInt::binaryToWords(const std::vector<bool>& binaryDigits)
 {
-	Words words;
+	BigInt::Words words;
 
 	for (size_t i = 0; i < binaryDigits.size(); i += 32)
 	{
