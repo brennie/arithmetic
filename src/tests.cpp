@@ -211,7 +211,9 @@ bool test_rshift()
 		{"1", 32, "0"},
 		{"18446744073709551615", 31, "8589934591"},
 		{"18446744073709551615", 32, "4294967295"},
-		{"18446744073709551615", 33, "2147483647"}
+		{"18446744073709551615", 33, "2147483647"},
+		{"2313216784161423789514236106464", 32, "538587752767238716947"},
+		{"2313216784161423789514236106464", 64, "125399733140"}
 	};
 
 	cout << "test_rshift:" << endl;
@@ -249,7 +251,9 @@ bool test_lshift()
 		{"1", 32, "4294967296"},
 		{"8589934591", 31, "18446744071562067968"},
 		{"4294967295", 32, "18446744069414584320"},
-		{"2147483647", 33, "18446744065119617024"}
+		{"2147483647", 33, "18446744065119617024"},
+		{"2340128341023948", 23, "19630419322540218384384"},
+		{"651561984651612161435878451", 64, "12019197179026560467995728591684751358286626816"}
 	};
 
 	cout << "test_lshift:" << endl;
@@ -271,6 +275,43 @@ bool test_lshift()
 	return success;
 }
 
+bool test_division()
+{
+	bool success = true;
+
+	struct Test
+	{
+		string left, right, result;
+	};
+
+	vector<Test> tests
+	{
+		{"256", "16", "16"},
+		{"1293847", "1234", "1048"},
+		{"4294967295", "1024", "4194303"},
+		{"341234918273418923412341234","12341234123412","27649983369659"}
+
+	};
+
+	cout << "test_division:" << endl;
+	for (auto test : tests)
+	{
+		BigInt left(test.left), right(test.right), result(test.result);
+		BigInt sum(left / right);
+		if (sum == result)
+			cout << test.left << " / " << test.right << " == " << test.result << endl;
+		else
+		{
+			cout << test.left << " / " << test.right << " != " << test.result
+		         << " (got " << (string)sum << " instead)" << endl;
+
+		    success = false;
+		}
+	}
+
+	return success;
+}
+
 int main()
 {
 	size_t successes = 0;
@@ -282,7 +323,8 @@ int main()
 		test_addition,
 		test_subtraction,
 		test_rshift,
-		test_lshift
+		test_lshift,
+		test_division
 	};
 
 	for (auto test : tests)

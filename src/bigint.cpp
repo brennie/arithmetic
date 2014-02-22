@@ -80,7 +80,7 @@ BigInt::BigInt(const std::string& str) : positive(true)
 			uint32_t word = 0;
 			for (size_t j = 32; j > 0; j--)
 				if (i + j - 1 < binaryDigits.size())
-					word = (word << 1) + (unsigned)binaryDigits[i + j - 1];
+					word = (word << 1) + (uint32_t)binaryDigits[i + j - 1];
 
 			words.push_back(word);
 		}
@@ -98,6 +98,14 @@ BigInt::BigInt(const BigInt& that) : positive(that.positive), words(that.words)
 }
 
 BigInt::BigInt(BigInt&& that) : positive(that.positive), words(std::move(that.words))
+{
+}
+
+BigInt::BigInt(const BigInt::Words& that) : positive(true), words(that)
+{
+}
+
+BigInt::BigInt(const BigInt::Words&& that) : positive(true), words(that)
 {
 }
 
@@ -462,41 +470,74 @@ BigInt& BigInt::operator-=(const BigInt::Words& that)
 
 BigInt& BigInt::operator/=(const BigInt& that)
 {
-	if (positive && !that.positive)
-	{
-		*this /= -that;
-		positive = false;
-	}
-	else if (!positive && that.positive)
-	{
-		positive = true;
-		*this /= that;
-		positive = false;
-	}
-	else if (!positive && !that.positive)
-	{
-		positive = true;
-		*this /= -that;
-	}
-	else
-	{
-		BigInt value(std::move(*this));
-		*this = zero;
+	if (*this < that)
+		return zero;
 
-		while (value >= that)
-		{
-			++(*this);
-			value -= that;
-		}
-	}
+	else if (that == zero)
+		throw std::invalid_argument("division by zero");
+
+	bool newPositive = positive == that.positive;
+
+	*this = *this / that.words;
+	positive = newPositive;
 
 	trim();
 
 	return *this;
 }
 
+BigInt BigInt::operator/(const BigInt::Words& that)
+{
+	BigInt dividend(*this);
+	BigInt divisor(that);
+	BigInt result;
+
+	std::vector<bool> binaryDigits;
+
+	size_t shift = dividend.size() - divisor.size();
+
+	divisor <<= shift;
+	while (divisor > dividend)
+	{
+		divisor >>= 1;
+		shift--;
+	}
+
+	while (shift)
+	{
+		if (divisor <= dividend)
+		{
+			dividend -= divisor;
+			binaryDigits.push_back(true);
+		}
+		else
+			binaryDigits.push_back(false);
+
+		--shift;
+		divisor >>= 1;
+	}
+
+	binaryDigits.push_back(divisor <= dividend);
+
+	result.words.clear();
+
+	for (int i = (int)binaryDigits.size() - 32; i >= -31; i -= 32)
+	{
+		unsigned int x = 0;
+			for (int j = 0; j < 32; ++j)
+				if ((i + j >= 0) && (i + j < (int) binaryDigits.size()))
+					x = (x << 1) + binaryDigits[i + j];
+		result.words.push_back(x);
+	}
+
+	return result;
+}
+
 BigInt& BigInt::operator/=(const uint32_t that)
 {
+	if (that == 0)
+		throw std::invalid_argument("division by zero");
+
 	uint64_t remainder = 0;
 
 	for (auto word = words.rbegin(); word != words.rend(); ++word)
@@ -552,17 +593,12 @@ BigInt& BigInt::operator<<=(const uint32_t that)
 	{
 		const size_t newSize = words.size() + wordShifts;
 
-
 		words.resize(newSize, 0);
-
-
 
 		std::copy_backward(words.begin(), words.begin() + wordShifts, words.end());
 		for (size_t i = 0; i < newSize - wordShifts; i++)
 			words[newSize - i - 1] = words[newSize - i - wordShifts - 1];
 
-
-		
 		for (size_t i = newSize - wordShifts; i < newSize; i++)
 			words[newSize - i - 1] = 0;
 
@@ -593,7 +629,7 @@ BigInt& BigInt::operator>>=(const uint32_t that)
 	{
 		const size_t oldSize = words.size();
 
-		for(size_t i = 0; i < oldSize - wordShifts; i--)
+		for(size_t i = 0; i < oldSize - wordShifts; i++)
 			words[i] = words[i + wordShifts];
 
 		while (words.size() != oldSize - wordShifts)
@@ -614,6 +650,8 @@ BigInt& BigInt::operator>>=(const uint32_t that)
 			lastHigh = nextHigh;
 		}
 	}
+
+	trim();
 
 	return *this;
 }
@@ -700,7 +738,6 @@ size_t BigInt::size() const
 
 	return size;
 }
-
 
 void BigInt::trim()
 {

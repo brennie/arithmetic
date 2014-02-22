@@ -93,8 +93,14 @@ private:
 
 	BigInt::Words words;
 
+	BigInt(const BigInt::Words& that);
+	BigInt(const BigInt::Words&& that);
+
 	BigInt& operator+=(const BigInt::Words& that);
+	
 	BigInt& operator-=(const BigInt::Words& that);
+
+	BigInt operator/(const BigInt::Words& that);
 
 	void trim();
 };
