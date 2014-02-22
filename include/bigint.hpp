@@ -87,7 +87,6 @@ private:
 
 	static BigInt zero;
 	static BigInt one;
-	static BigInt ten;
 
 	bool positive;
 
